@@ -35,10 +35,10 @@ public class SchemaStore
     public record HistoryItem(int Version, DateTimeOffset CreatedAt, string Op);
 
     /// <summary>
-    /// Seeds version 1 with the Mantu Apps Launcher (if the store is empty). All prop-driven
-    /// colour is expressed as design tokens (tone: brand|ok|warn|danger|neutral) — never raw hex —
-    /// so the seed obeys the same design standard the renderer enforces (System.Text.Json
-    /// re-escapes the glyphs to \uXXXX on persist via Compact()).
+    /// Seeds version 1 with the canonical dynamic-ui example (if the store is empty): the "Lumen"
+    /// workspace members admin — a header + members table + footer, styled purely via Tailwind
+    /// props.className (spec v1.0). System.Text.Json re-escapes any non-ASCII glyphs to \uXXXX on
+    /// persist via Compact().
     /// </summary>
     public async Task EnsureSeededAsync()
     {
@@ -48,117 +48,109 @@ public class SchemaStore
 
         var seed = """
         {
-          "id": "root",
-          "type": "LauncherWindow",
-          "props": { "dark": false },
+          "id": "page-root",
+          "type": "container",
+          "props": { "className": "min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 antialiased flex flex-col transition-colors" },
           "children": [
             {
-              "id": "titlebar",
-              "type": "TitleBar",
-              "props": { "title": "Mantu Apps Launcher", "subtitle": "HOP · v2.4", "icon": "M", "tone": "brand" }
-            },
-            {
-              "id": "toolbar",
-              "type": "Toolbar",
+              "id": "site-header",
+              "type": "header",
+              "props": { "className": "sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-800 px-8 h-16 flex items-center justify-between" },
               "children": [
                 {
-                  "id": "env",
-                  "type": "EnvSegment",
-                  "props": { "options": [
-                    { "label": "DEV", "tone": "warn" },
-                    { "label": "STAGING", "active": true, "tone": "ok" },
-                    { "label": "PROD", "tone": "danger" }
-                  ] }
-                },
-                { "id": "search", "type": "SearchBar", "props": { "placeholder": "Search apps…  (Ctrl+K)" } },
-                { "id": "refresh", "type": "ToolButton", "props": { "icon": "⟳" } },
-                { "id": "density", "type": "ToolButton", "props": { "icon": "▦" } }
-              ]
-            },
-            {
-              "id": "body",
-              "type": "Body",
-              "children": [
-                {
-                  "id": "sidebar",
-                  "type": "Sidebar",
+                  "id": "brand",
+                  "type": "container",
+                  "props": { "className": "flex items-center gap-2.5" },
                   "children": [
-                    {
-                      "id": "ws",
-                      "type": "SideSection",
-                      "props": { "label": "Workspaces", "items": [
-                        { "icon": "▦", "label": "All apps", "count": 24, "active": true },
-                        { "icon": "★", "label": "Pinned", "count": 5 },
-                        { "icon": "◷", "label": "Recent", "count": 8 }
-                      ] }
-                    },
-                    {
-                      "id": "cats",
-                      "type": "SideSection",
-                      "props": { "label": "Categories", "items": [
-                        { "icon": "◆", "label": "Internal", "count": 12 },
-                        { "icon": "◯", "label": "Web", "count": 7 },
-                        { "icon": "⚙", "label": "DevOps", "count": 5 }
-                      ] }
-                    },
-                    {
-                      "id": "envcard",
-                      "type": "EnvCard",
-                      "props": { "title": "STAGING", "subtitle": "eu-west-1 · healthy", "footer": "Last sync 2m ago", "tone": "ok" }
-                    }
+                    { "id": "brand-mark", "type": "container", "props": { "className": "w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm", "text": "L" }, "children": [] },
+                    { "id": "brand-name", "type": "text", "props": { "as": "span", "text": "Lumen", "className": "font-semibold text-[17px] tracking-tight text-gray-900 dark:text-gray-100" } }
                   ]
                 },
                 {
-                  "id": "mainpanel",
-                  "type": "MainPanel",
+                  "id": "main-nav",
+                  "type": "container",
+                  "props": { "className": "hidden md:flex items-center gap-7 text-sm font-medium text-gray-500 dark:text-gray-400" },
+                  "children": [
+                    { "id": "nav-dashboard", "type": "link", "props": { "href": "#", "text": "Dashboard", "className": "hover:text-gray-900 dark:hover:text-gray-100 transition-colors" } },
+                    { "id": "nav-members", "type": "link", "props": { "href": "#", "text": "Members", "className": "text-gray-900 dark:text-gray-100" } },
+                    { "id": "nav-billing", "type": "link", "props": { "href": "#", "text": "Billing", "className": "hover:text-gray-900 dark:hover:text-gray-100 transition-colors" } },
+                    { "id": "nav-settings", "type": "link", "props": { "href": "#", "text": "Settings", "className": "hover:text-gray-900 dark:hover:text-gray-100 transition-colors" } }
+                  ]
+                },
+                {
+                  "id": "header-actions",
+                  "type": "container",
+                  "props": { "className": "flex items-center gap-2" },
                   "children": [
                     {
-                      "id": "mainhead",
-                      "type": "MainHeader",
-                      "props": { "title": "All apps", "count": 24, "subtitle": "Showing apps available for STAGING" }
+                      "id": "theme-toggle",
+                      "type": "button",
+                      "props": { "text": "☾ Dark mode", "onClick": { "action": "toggleTheme" }, "className": "inline-flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" }
                     },
                     {
-                      "id": "grid",
-                      "type": "CardGrid",
-                      "children": [
-                        {
-                          "id": "app-timesheet",
-                          "type": "AppCard",
-                          "props": { "name": "Timesheet", "short": "Weekly time entry", "chip": "Internal", "pinned": true,
-                            "rows": [ { "label": "Type", "value": "Web app" }, { "label": "URL", "value": "staging.timesheet.mantu.io" } ],
-                            "actions": [ { "label": "Open", "primary": true }, { "label": "⋯" } ] }
-                        },
-                        {
-                          "id": "app-talentsoft",
-                          "type": "AppCard",
-                          "props": { "name": "Talentsoft", "short": "HR & talent management", "chip": "HR",
-                            "rows": [ { "label": "Type", "value": "SaaS" }, { "label": "URL", "value": "mantu.talent-soft.com" } ],
-                            "actions": [ { "label": "Open", "primary": true }, { "label": "⋯" } ] }
-                        },
-                        {
-                          "id": "app-pipeline",
-                          "type": "AppCard",
-                          "props": { "name": "Pipeline", "short": "CI/CD dashboard", "chip": "DevOps", "selected": true,
-                            "rows": [ { "label": "Type", "value": "Internal" }, { "label": "URL", "value": "ci.mantu.io/pipeline" } ],
-                            "actions": [ { "label": "Open", "primary": true }, { "label": "⋯" } ] }
-                        },
-                        {
-                          "id": "app-knowledge",
-                          "type": "AppCard",
-                          "props": { "name": "Knowledge", "short": "Internal wiki & docs", "chip": "Docs",
-                            "rows": [ { "label": "Type", "value": "Web app" }, { "label": "URL", "value": "wiki.mantu.io" } ],
-                            "actions": [ { "label": "Open", "primary": true }, { "label": "⋯" } ] }
-                        }
-                      ]
+                      "id": "header-cta",
+                      "type": "button",
+                      "props": { "text": "Invite member", "className": "inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3.5 py-2 rounded-lg shadow-sm transition-colors" }
                     }
                   ]
                 }
               ]
             },
             {
-              "id": "statusbar",
-              "type": "StatusBar",
-              "props": { "left": "● Connected", "mid": "24 apps · 5 pinned", "right": "STAGING · eu-west-1" }
+              "id": "main",
+              "type": "container",
+              "props": { "className": "flex-1 w-full max-w-6xl mx-auto px-8 py-10" },
+              "children": [
+                {
+                  "id": "page-head",
+                  "type": "container",
+                  "props": { "className": "flex items-end justify-between gap-6 mb-7" },
+                  "children": [
+                    {
+                      "id": "page-head-text",
+                      "type": "container",
+                      "props": { "className": "space-y-1.5" },
+                      "children": [
+                        { "id": "page-title", "type": "text", "props": { "as": "h1", "text": "Team members", "className": "text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100" } },
+                        { "id": "page-subtitle", "type": "text", "props": { "as": "p", "text": "Manage who has access to the Lumen workspace and their roles.", "className": "text-sm text-gray-500 dark:text-gray-400 max-w-xl" } }
+                      ]
+                    },
+                    { "id": "members-count", "type": "text", "props": { "as": "span", "text": "8 members", "className": "shrink-0 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-2.5 py-1 rounded-full" } }
+                  ]
+                },
+                {
+                  "id": "users-table",
+                  "type": "table",
+                  "props": {
+                    "className": "w-full border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden bg-white dark:bg-gray-900 text-sm shadow-sm",
+                    "headerClassName": "bg-gray-50 dark:bg-gray-800/50 text-left text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide",
+                    "thClassName": "px-4 py-3 font-medium",
+                    "rowClassName": "border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50/70 dark:hover:bg-gray-800/40 transition-colors",
+                    "tdClassName": "px-4 py-3 align-middle",
+                    "columns": [
+                      { "key": "name", "label": "Name", "variant": "user" },
+                      { "key": "email", "label": "Email", "tdClassName": "px-4 py-3 text-gray-500 dark:text-gray-400" },
+                      { "key": "role", "label": "Role" },
+                      { "key": "status", "label": "Status", "variant": "badge" }
+                    ],
+                    "rows": [
+                      { "name": "Mara Whitfield", "initials": "MW", "email": "mara@lumen.app", "role": "Owner", "status": "Active", "lastActive": "2 min ago" },
+                      { "name": "Devin Okafor", "initials": "DO", "email": "devin@lumen.app", "role": "Admin", "status": "Active", "lastActive": "1 hr ago" },
+                      { "name": "Priya Raman", "initials": "PR", "email": "priya@lumen.app", "role": "Editor", "status": "Active", "lastActive": "3 hr ago" },
+                      { "name": "Tomás Herrera", "initials": "TH", "email": "tomas@lumen.app", "role": "Editor", "status": "Invited", "lastActive": "—" },
+                      { "name": "Sofia Nilsson", "initials": "SN", "email": "sofia@lumen.app", "role": "Viewer", "status": "Active", "lastActive": "Yesterday" },
+                      { "name": "Jamal Carter", "initials": "JC", "email": "jamal@lumen.app", "role": "Viewer", "status": "Suspended", "lastActive": "12 days ago" },
+                      { "name": "Aiko Tanaka", "initials": "AT", "email": "aiko@lumen.app", "role": "Editor", "status": "Invited", "lastActive": "—" },
+                      { "name": "Lena Vogel", "initials": "LV", "email": "lena@lumen.app", "role": "Admin", "status": "Active", "lastActive": "5 min ago" }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "site-footer",
+              "type": "footer",
+              "props": { "className": "border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-8 py-5 text-center text-xs text-gray-400 dark:text-gray-500", "text": "Lumen — rendered live from ui-schema.json · dynamic-ui PoC" }
             }
           ]
         }

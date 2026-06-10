@@ -4,7 +4,17 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>client</title>
+    <title>Dynamic UI — Lumen</title>
+    <!-- Tailwind Play CDN: the schema styles every node via props.className (Tailwind), and a
+         className edit (a live JSON Patch from Claude) must restyle instantly. The CDN JITs
+         arbitrary classes at runtime as the DOM mutates — a real build-time Tailwind can't, since
+         schema-driven class strings aren't knowable ahead of time. PoC-appropriate. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- class strategy: a single `dark` class on <html> drives every `dark:` variant, so the
+         theme toggle flips the whole tree with one class change (no per-node className patch). -->
+    <script>
+      tailwind.config = { darkMode: "class" };
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -4,40 +4,24 @@ namespace DynamicUi.Server.Schema;
 /// The fixed catalogue of renderable component types (the validation contract shared,
 /// by convention, with the React renderer). A patch that introduces a type absent here,
 /// or omits a type's required props, is rejected. Extend this to add components.
+///
+/// This is the dynamic-ui spec v1.0 vocabulary: a small set of generic primitives whose
+/// styling is carried entirely in <c>props.className</c> (Tailwind) — so a restyle is just
+/// a className edit, never a new component type. See docs/knowledge/dynamic-ui-schema-spec.md.
 /// </summary>
 public static class ComponentRegistry
 {
     public static readonly IReadOnlyDictionary<string, string[]> Components =
         new Dictionary<string, string[]>(StringComparer.Ordinal)
         {
-            // type           required prop names
-            ["Screen"]    = Array.Empty<string>(),
-            ["Container"] = Array.Empty<string>(),
-            ["Stack"]     = Array.Empty<string>(),
-            ["Text"]      = new[] { "text" },
-            ["Heading"]   = new[] { "text" },
-            ["Banner"]    = new[] { "text" },
-            ["Button"]    = new[] { "label" },
-            ["Input"]     = new[] { "name" },
-            ["Image"]     = new[] { "src" },
-
-            // --- App-launcher catalogue (Win11/WPF-look). Containers carry children;
-            //     prop-driven composites use array props (options/items/rows/actions). ---
-            ["LauncherWindow"] = Array.Empty<string>(),          // window chrome wrapper
-            ["TitleBar"]       = new[] { "title" },              // + subtitle, icon, iconColor
-            ["Toolbar"]        = Array.Empty<string>(),          // container
-            ["EnvSegment"]     = new[] { "options" },            // options[]: {label, active?, color?}
-            ["SearchBar"]      = Array.Empty<string>(),          // + placeholder
-            ["ToolButton"]     = Array.Empty<string>(),          // + icon
-            ["Body"]           = Array.Empty<string>(),          // container (sidebar | main)
-            ["Sidebar"]        = Array.Empty<string>(),          // container
-            ["SideSection"]    = new[] { "label" },              // items[]: {icon?, label, count?, active?}
-            ["EnvCard"]        = new[] { "title" },              // + subtitle, footer, dotColor
-            ["MainPanel"]      = Array.Empty<string>(),          // container
-            ["MainHeader"]     = new[] { "title" },              // + count, subtitle
-            ["CardGrid"]       = Array.Empty<string>(),          // container
-            ["AppCard"]        = new[] { "name" },               // + short, chip, thumb, pinned, selected, rows[], actions[]
-            ["StatusBar"]      = Array.Empty<string>(),          // + left, mid, right
+            // type          required prop names        // notes
+            ["container"] = Array.Empty<string>(),       // generic <div>; optional props.text; has children
+            ["header"]    = Array.Empty<string>(),       // semantic <header>; has children
+            ["footer"]    = Array.Empty<string>(),       // semantic <footer>; props.text or children
+            ["text"]      = new[] { "text" },            // props.as selects tag (h1|h2|h3|p|span)
+            ["link"]      = new[] { "text" },            // + href
+            ["button"]    = new[] { "text" },            // + optional onClick={action,payload} (client-side, e.g. toggleTheme)
+            ["table"]     = new[] { "columns" },         // columns[] + rows[] (static) or dataSource (API-bound)
         };
 
     public static bool IsKnown(string type) => Components.ContainsKey(type);

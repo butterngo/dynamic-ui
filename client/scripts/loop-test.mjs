@@ -73,8 +73,8 @@ try {
   ok("MCP initialize over HTTP returns a session", !!sessionId && !!init?.result, `session=${sessionId ? "yes" : "no"}`);
   await mcp("notifications/initialized", {}, { notify: true });
 
-  // 4. Valid edit: rename the title-bar heading. (mirrors AC-2 "make the ... say ...")
-  const patch = JSON.stringify([{ op: "replace", path: "/children/0/props/title", value: "Hello team" }]);
+  // 4. Valid edit: rename the footer text. (root.children = [header, main, footer])
+  const patch = JSON.stringify([{ op: "replace", path: "/children/2/props/text", value: "Hello team" }]);
   const applyRes = await mcp("tools/call", { name: "ui_apply_patch", arguments: { patch } });
   const apply = unwrap(applyRes);
   const applyOk = apply?.ok === true && JSON.stringify(apply.schema).includes("Hello team");

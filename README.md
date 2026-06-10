@@ -73,7 +73,7 @@ Both connect to the running server's MCP endpoint, and both can be open at once 
 
 Then ask Claude, e.g.:
 
-> "Make the title bar say 'Hello team' and add a teal banner that says 'Live edit works'."
+> "Recolor the Invite member button to emerald and rename the heading to 'Workspace members'."
 
 The change is validated, versioned, broadcast — and appears in every open browser instantly,
 no matter which client issued it.
@@ -81,7 +81,7 @@ no matter which client issued it.
 ## Verify the live-edit loop (no Claude Desktop needed)
 
 `client/scripts/loop-test.mjs` is an integration check for the whole path —
-MCP `tools/call` (raw JSON-RPC over stdin) → `SchemaStore` validate → persist → SignalR
+MCP `tools/call` (JSON-RPC over the HTTP transport at `/mcp`) → `SchemaStore` validate → persist → SignalR
 broadcast → a connected SignalR client receives `SchemaChanged`. It also asserts an invalid
 patch is rejected without bumping the version.
 
