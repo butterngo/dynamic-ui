@@ -1,0 +1,119 @@
+:root {
+  color-scheme: light;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #1a1a1a;
+  background: #f6f7f9;
+}
+
+.app-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  background: #0f172a;
+  color: #fff;
+}
+
+.app-title {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.app-status {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.app-status.live {
+  color: #4ade80;
+}
+.app-status.off {
+  color: #f87171;
+}
+
+.app-canvas {
+  flex: 1;
+  padding: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.app-foot {
+  padding: 0.75rem 1.25rem;
+  font-size: 0.8rem;
+  color: #64748b;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+/* --- SDUI component styles --- */
+.sdui-screen {
+  width: 100%;
+  max-width: 640px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.sdui-screen-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+}
+.sdui-container,
+.sdui-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.sdui-heading {
+  margin: 0;
+  font-size: 1.2rem;
+}
+.sdui-text {
+  margin: 0;
+  line-height: 1.5;
+}
+.sdui-banner {
+  color: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+.sdui-button {
+  align-self: flex-start;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.sdui-input {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+}
+.sdui-image {
+  max-width: 100%;
+  border-radius: 8px;
+}
+.sdui-unknown {
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px dashed #f59e0b;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.sdui-empty {
+  color: #94a3b8;
+}

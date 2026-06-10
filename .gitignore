@@ -1,0 +1,21 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+*.db
+*.db-shm
+*.db-wal
+
+# Node / client
+node_modules/
+dist/
+*.local
+
+# Editor / OS
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets (per project convention)
+sensitive_information/
