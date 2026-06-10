@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import type { CSSProperties, JSX } from "react";
 import type { UiNode } from "./types";
 
 // The client half of the component registry — must stay in sync with the server's
@@ -16,33 +16,39 @@ const bool = (v: unknown) => v === true;
 type Obj = Record<string, unknown>;
 const arr = (v: unknown): Obj[] => (Array.isArray(v) ? (v as Obj[]) : []);
 const kids = (n: UiNode, rc: (n: UiNode) => JSX.Element) => (n.children ?? []).map(rc);
+// Style passthrough: ui_import_url attaches a camelCased CSS object under props.style, which we
+// spread onto the element so imported pages keep their look. Non-objects are ignored.
+const sty = (n: UiNode): CSSProperties | undefined => {
+  const s = p(n).style;
+  return s && typeof s === "object" && !Array.isArray(s) ? (s as CSSProperties) : undefined;
+};
 
 export const registry: Record<string, Renderer> = {
   // --- Generic primitives -------------------------------------------------
   Screen: (n, rc) => (
-    <div className="sdui-screen">
+    <div className="sdui-screen" style={sty(n)}>
       {str(p(n).title) && <h1 className="sdui-screen-title">{str(p(n).title)}</h1>}
       {kids(n, rc)}
     </div>
   ),
-  Container: (n, rc) => <div className="sdui-container">{kids(n, rc)}</div>,
-  Stack: (n, rc) => <div className="sdui-stack">{kids(n, rc)}</div>,
-  Heading: (n) => <h2 className="sdui-heading">{str(p(n).text)}</h2>,
-  Text: (n) => <p className="sdui-text">{str(p(n).text)}</p>,
+  Container: (n, rc) => <div className="sdui-container" style={sty(n)}>{kids(n, rc)}</div>,
+  Stack: (n, rc) => <div className="sdui-stack" style={sty(n)}>{kids(n, rc)}</div>,
+  Heading: (n) => <h2 className="sdui-heading" style={sty(n)}>{str(p(n).text)}</h2>,
+  Text: (n) => <p className="sdui-text" style={sty(n)}>{str(p(n).text)}</p>,
   Banner: (n) => (
-    <div className="sdui-banner" style={{ background: str(p(n).color, "#1f6f5c") }}>
+    <div className="sdui-banner" style={{ background: str(p(n).color, "#1f6f5c"), ...sty(n) }}>
       {str(p(n).text)}
     </div>
   ),
   Button: (n) => (
-    <button className="sdui-button" style={{ background: str(p(n).color, "#2563eb") }}>
+    <button className="sdui-button" style={{ background: str(p(n).color, "#2563eb"), ...sty(n) }}>
       {str(p(n).label)}
     </button>
   ),
   Input: (n) => (
-    <input className="sdui-input" name={str(p(n).name)} placeholder={str(p(n).placeholder)} />
+    <input className="sdui-input" name={str(p(n).name)} placeholder={str(p(n).placeholder)} style={sty(n)} />
   ),
-  Image: (n) => <img className="sdui-image" src={str(p(n).src)} alt={str(p(n).alt)} />,
+  Image: (n) => <img className="sdui-image" src={str(p(n).src)} alt={str(p(n).alt)} style={sty(n)} />,
 
   // --- App-launcher catalogue (styles scoped under `.lx` in App.css) ------
   LauncherWindow: (n, rc) => (

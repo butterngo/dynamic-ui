@@ -96,6 +96,19 @@ try {
   const after = await (await fetch(`${SERVER}/api/schema`)).json();
   ok("version bumped exactly once (reject didn't persist)", after.version === before.version + 1, `${before.version} -> ${after.version}`);
 
+  // 7. ui_drop_schema clears the UI to a blank Screen, as a new version, and broadcasts.
+  received.length = 0;
+  const dropRes = await mcp("tools/call", { name: "ui_drop_schema", arguments: {} });
+  const drop = unwrap(dropRes);
+  const droppedToBlank = drop?.ok === true
+    && drop.schema?.type === "Screen"
+    && (drop.schema?.children == null || drop.schema.children.length === 0);
+  ok("ui_drop_schema clears to a blank Screen", droppedToBlank, `ok=${drop?.ok} type=${drop?.schema?.type}`);
+  ok("drop creates a new version", drop && drop.version === after.version + 1, drop ? `${after.version} -> ${drop.version}` : "");
+  for (let i = 0; i < 20 && received.length === 0; i++) await sleep(100);
+  const dropEvt = received[0];
+  ok("drop broadcast received by client", !!dropEvt && dropEvt.schema?.type === "Screen", dropEvt ? `version=${dropEvt.version}` : "no event");
+
   await conn.stop();
 } catch (e) {
   ok("test harness completed without throwing", false, String(e));

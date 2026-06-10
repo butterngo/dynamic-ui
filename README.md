@@ -102,8 +102,10 @@ Expected: `ALL PASS ✅`.
 | `ui_set_prop` | Set one prop on a node (JSON Pointer) |
 | `ui_add_component` | Append a child to a parent node |
 | `ui_remove_component` | Remove a node |
+| `ui_import_url` | Import a static web page into the schema (replace or append) |
 | `ui_history` | Version history |
 | `ui_rollback` | Restore a prior version (as a new version) |
+| `ui_drop_schema` | Clear the UI to a blank screen (as a new version) |
 
 ## Component registry
 

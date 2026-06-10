@@ -92,6 +92,68 @@ public static class UiTools
         return Wrap(store.ApplyPatchAsync(patch.ToJsonString()));
     }
 
+    [McpServerTool(Name = "ui_import_url")]
+    [Description("Fetch a web page (static HTML only — no JS rendering) and extract it into the UI " +
+                 "schema using the known component types. mode=\"replace\" (default) swaps the whole " +
+                 "screen; mode=\"append\" adds the imported page under the root. Reversible via ui_rollback.")]
+    public static async Task<object> ImportUrl(
+        SchemaStore store,
+        [Description("Absolute http(s) URL of the page to import, e.g. \"https://example.com\"")] string url,
+        [Description("\"replace\" (default) or \"append\"")] string? mode = null)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            return new { ok = false, error = "url must be an absolute http(s) URL." };
+
+        string html;
+        try
+        {
+            using var resp = await Http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+            if (!resp.IsSuccessStatusCode)
+                return new { ok = false, error = $"Fetch failed: HTTP {(int)resp.StatusCode} {resp.ReasonPhrase}." };
+
+            var mediaType = resp.Content.Headers.ContentType?.MediaType;
+            if (mediaType is not null && !mediaType.Contains("html", StringComparison.OrdinalIgnoreCase))
+                return new { ok = false, error = $"Expected an HTML page but got '{mediaType}'." };
+
+            html = await ReadCappedAsync(resp, MaxPageBytes);
+        }
+        catch (Exception ex)
+        {
+            return new { ok = false, error = $"Fetch failed: {ex.Message}" };
+        }
+
+        var screen = await HtmlSchemaExtractor.ExtractAsync(html, uri);
+        var append = string.Equals(mode, "append", StringComparison.OrdinalIgnoreCase);
+        var patch = new JsonArray
+        {
+            new JsonObject
+            {
+                ["op"] = append ? "add" : "replace",
+                ["path"] = append ? "/children/-" : "",
+                ["value"] = screen,
+            }
+        };
+        return await Wrap(store.ApplyPatchAsync(patch.ToJsonString()));
+    }
+
+    [McpServerTool(Name = "ui_drop_schema")]
+    [Description("Clear the entire UI, resetting the schema to a blank Screen. Recorded as a new " +
+                 "version and broadcast to all clients. Reversible via ui_rollback.")]
+    public static Task<object> DropSchema(SchemaStore store)
+    {
+        var patch = new JsonArray
+        {
+            new JsonObject
+            {
+                ["op"] = "replace",
+                ["path"] = "",
+                ["value"] = new JsonObject { ["id"] = "root", ["type"] = "Screen" },
+            }
+        };
+        return Wrap(store.ApplyPatchAsync(patch.ToJsonString()));
+    }
+
     [McpServerTool(Name = "ui_rollback")]
     [Description("Restore a previous version of the schema (as a new version) and broadcast to all clients.")]
     public static Task<object> Rollback(
@@ -105,6 +167,32 @@ public static class UiTools
         return r.Ok
             ? new { ok = true, version = r.Version, schema = JsonNode.Parse(r.Schema!) }
             : new { ok = false, error = r.Error };
+    }
+
+    private const int MaxPageBytes = 2 * 1024 * 1024;
+
+    private static readonly HttpClient Http = CreateHttpClient();
+
+    private static HttpClient CreateHttpClient()
+    {
+        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("dynamic-ui-poc/1.0");
+        return client;
+    }
+
+    private static async Task<string> ReadCappedAsync(HttpResponseMessage resp, int maxBytes)
+    {
+        await using var stream = await resp.Content.ReadAsStreamAsync();
+        using var buffered = new MemoryStream();
+        var buffer = new byte[8192];
+        int read;
+        while ((read = await stream.ReadAsync(buffer)) > 0)
+        {
+            buffered.Write(buffer, 0, read);
+            if (buffered.Length > maxBytes)
+                throw new InvalidOperationException($"Page exceeds the {maxBytes / 1024} KB import cap.");
+        }
+        return System.Text.Encoding.UTF8.GetString(buffered.ToArray());
     }
 
     private static JsonNode? ParseValue(string raw)
