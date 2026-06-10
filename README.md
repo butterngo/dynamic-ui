@@ -17,10 +17,9 @@ Claude Desktop  ─┤───────────────▶│  Dynam
                  │                 │   • MCP tools (ui_*)  — Streamable HTTP    │
    ui_apply_patch, ui_set_prop     │   • PatchValidator + ComponentRegistry     │
    ui_add/remove_component         │   • SchemaStore  (validate→persist→cast)   │
-   ui_history, ui_rollback         │   • SQLite (schema + patch history)        │
-                                   │   • SignalR hub  /hub/ui                   │
+   ui_history, ui_rollback         │   • SQLite (schema + patch history)        │               │
                                    └───────────────┬───────────────────────────┘
-                                                   │ SignalR "SchemaChanged"
+                                                   │  "SchemaChanged"
                                                    ▼
                               React client (Vite) — walks schema, renders live
 ```
