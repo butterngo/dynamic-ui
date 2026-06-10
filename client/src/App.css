@@ -1,5 +1,15 @@
 :root {
   color-scheme: light;
+
+  /* Semantic design tokens — the single source of truth for prop-driven color.
+     A schema node names a tone (e.g. tone:"ok"); it can never carry a raw hex. */
+  --tone-brand:   #7c3aed;
+  --tone-ok:      #6cdec4;
+  --tone-warn:    #f0b429;
+  --tone-danger:  #e85d5d;
+  --tone-neutral: #8a86a0;
+  --tone-info:    #2563eb;
+  --tone-success: #1f6f5c;
 }
 
 .app {
@@ -464,3 +474,17 @@
   background-clip: padding-box; border: 2px solid transparent;
 }
 .lx *::-webkit-scrollbar-track { background: transparent; }
+
+/* ===================================================================== */
+/* Semantic tone fills. A `.tone-*` class is the ONLY way a node colors a  */
+/* swatch (app icon, env dot, banner, button) — there are no inline color  */
+/* styles anywhere. The `.lx .tone-*` variant ties specificity with        */
+/* launcher rules like `.lx .env-dot` and, declared last, wins.            */
+/* ===================================================================== */
+.tone-brand,   .lx .tone-brand   { background: var(--tone-brand); }
+.tone-ok,      .lx .tone-ok      { background: var(--tone-ok); }
+.tone-warn,    .lx .tone-warn    { background: var(--tone-warn); }
+.tone-danger,  .lx .tone-danger  { background: var(--tone-danger); }
+.tone-neutral, .lx .tone-neutral { background: var(--tone-neutral); }
+.tone-info,    .lx .tone-info    { background: var(--tone-info); }
+.tone-success, .lx .tone-success { background: var(--tone-success); }

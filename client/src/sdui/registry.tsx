@@ -12,6 +12,12 @@ const str = (v: unknown, fallback = "") => (typeof v === "string" ? v : fallback
 const txt = (v: unknown, fallback = "") =>
   typeof v === "string" ? v : typeof v === "number" ? String(v) : fallback;
 const bool = (v: unknown) => v === true;
+// Design-token guard: a color-bearing prop may only name a sanctioned tone, never a raw
+// hex. Unknown/missing values snap to the element's semantic default, so off-palette
+// colors aren't expressible from the schema — the standard lives in CSS, not in props.
+const TONES = new Set(["brand", "ok", "warn", "danger", "neutral", "info", "success"]);
+const tone = (v: unknown, fallback: string) =>
+  `tone-${typeof v === "string" && TONES.has(v) ? v : fallback}`;
 // Array props (options / items / rows / actions). Items are objects we read defensively.
 type Obj = Record<string, unknown>;
 const arr = (v: unknown): Obj[] => (Array.isArray(v) ? (v as Obj[]) : []);
@@ -30,14 +36,10 @@ export const registry: Record<string, Renderer> = {
   Heading: (n) => <h2 className="sdui-heading">{str(p(n).text)}</h2>,
   Text: (n) => <p className="sdui-text">{str(p(n).text)}</p>,
   Banner: (n) => (
-    <div className="sdui-banner" style={{ background: str(p(n).color, "#1f6f5c") }}>
-      {str(p(n).text)}
-    </div>
+    <div className={`sdui-banner ${tone(p(n).tone, "success")}`}>{str(p(n).text)}</div>
   ),
   Button: (n) => (
-    <button className="sdui-button" style={{ background: str(p(n).color, "#2563eb") }}>
-      {str(p(n).label)}
-    </button>
+    <button className={`sdui-button ${tone(p(n).tone, "info")}`}>{str(p(n).label)}</button>
   ),
   Input: (n) => (
     <input className="sdui-input" name={str(p(n).name)} placeholder={str(p(n).placeholder)} />
@@ -58,7 +60,7 @@ export const registry: Record<string, Renderer> = {
     return (
       <div className="titlebar">
         <div className="tb-left">
-          <div className="app-icon" style={{ background: str(p(n).iconColor, "#7C3AED") }}>
+          <div className={`app-icon ${tone(p(n).tone, "brand")}`}>
             {str(p(n).icon, title.charAt(0) || "M")}
           </div>
           <span className="tb-title">{title}</span>
@@ -79,7 +81,7 @@ export const registry: Record<string, Renderer> = {
     <div className="env-seg">
       {arr(p(n).options).map((o, i) => (
         <button key={i} className={`env-btn${bool(o.active) ? " active" : ""}`}>
-          <span className="env-dot" style={{ background: str(o.color, "#8a86a0") }} />
+          <span className={`env-dot ${tone(o.tone, "neutral")}`} />
           {txt(o.label)}
         </button>
       ))}
@@ -116,7 +118,7 @@ export const registry: Record<string, Renderer> = {
     <div className="side-footer">
       <div className="env-card">
         <div className="env-card-row">
-          <span className="env-dot lg" style={{ background: str(p(n).dotColor, "#6cdec4") }} />
+          <span className={`env-dot lg ${tone(p(n).tone, "ok")}`} />
           <div>
             <div className="ec-title">{txt(p(n).title)}</div>
             {txt(p(n).subtitle) && <div className="ec-sub">{txt(p(n).subtitle)}</div>}
