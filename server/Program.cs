@@ -7,14 +7,14 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// MCP stdio owns stdout — every log line must go to stderr or it corrupts the JSON-RPC stream.
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
-
 const string DevCorsPolicy = "vite-dev";
 const string ViteOrigin = "http://localhost:5173";
 
-builder.Services.AddDbContextFactory<UiSchemaDb>(o => o.UseSqlite("Data Source=dynamic-ui.db"));
+// Anchor the SQLite file to the binary's own directory, NOT the process cwd. A relative
+// "Data Source=dynamic-ui.db" resolves against whatever cwd the launcher happens to use and can
+// fail with SQLite Error 14 (unable to open database file). AppContext.BaseDirectory is stable.
+var dbPath = Path.Combine(AppContext.BaseDirectory, "dynamic-ui.db");
+builder.Services.AddDbContextFactory<UiSchemaDb>(o => o.UseSqlite($"Data Source={dbPath}"));
 builder.Services.AddSingleton<SchemaStore>();
 builder.Services.AddSignalR();
 builder.Services.AddCors(o => o.AddPolicy(DevCorsPolicy, p => p
@@ -23,17 +23,16 @@ builder.Services.AddCors(o => o.AddPolicy(DevCorsPolicy, p => p
     .AllowAnyMethod()
     .AllowCredentials()));
 
-// Attach the stdio MCP transport only when launched as an MCP server (e.g. by Claude Desktop:
-// `DynamicUi.Server --mcp`). Without the flag the same binary runs web-only so Kestrel/SignalR
-// stay up for local dev — single process, both capabilities, one authoritative SchemaStore.
-var asMcpServer = args.Contains("--mcp") || Environment.GetEnvironmentVariable("MCP_STDIO") == "1";
-if (asMcpServer)
-{
-    builder.Services
-        .AddMcpServer()
-        .WithStdioServerTransport()
-        .WithToolsFromAssembly();
-}
+// ONE long-running process serves the MCP tools over HTTP (Streamable HTTP transport) to EVERY
+// client at once. Claude Code and Claude Desktop both connect to http://localhost:5179/mcp instead
+// of each spawning their own stdio copy of this binary. That gives a single authoritative
+// SchemaStore + one SignalR hub the browser listens on, so: (a) edits from either client broadcast
+// live to the browser, and (b) the in-process write gate in SchemaStore now genuinely serializes
+// both clients, so concurrent edits can't collide on a schema version. No per-client process race.
+builder.Services
+    .AddMcpServer()
+    .WithHttpTransport()
+    .WithToolsFromAssembly();
 
 var app = builder.Build();
 
@@ -45,7 +44,7 @@ using (var scope = app.Services.CreateScope())
 
 app.UseCors(DevCorsPolicy);
 
-// Read surface for clients (bootstrap + reconnect re-fetch). Editing is MCP-only.
+// Read surface for browser clients (bootstrap + reconnect re-fetch). Editing is MCP-only.
 app.MapGet("/api/schema", async (SchemaStore store) =>
 {
     var snap = await store.GetCurrentAsync();
@@ -54,25 +53,26 @@ app.MapGet("/api/schema", async (SchemaStore store) =>
 app.MapGet("/api/history", async (SchemaStore store) => Results.Ok(await store.GetHistoryAsync()));
 app.MapHub<UiHub>("/hub/ui");
 
-// The MCP stdio transport and this web host share one process. A second instance — or a stale
-// orphan — holding 5179 would crash the whole process on Kestrel bind, taking the MCP transport
-// down mid-handshake (Claude Desktop/Code shows "fetching tools failed: Not connected"). So when
-// 5179 is already taken we keep the MCP tools alive on an ephemeral port and warn loudly instead
-// of dying: tools stay usable; only SignalR live-broadcast from THIS process is forfeited.
+// Streamable HTTP MCP endpoint. Clients point at http://localhost:5179/mcp.
+app.MapMcp("/mcp");
+
+// This is a singleton service now — clients connect to a fixed URL, they don't spawn it. If 5179 is
+// already taken, another copy is already running; a second one would only fight over the same DB and
+// port, so refuse to start and point at the live one rather than crash-looping or binding a useless
+// ephemeral port that no client's URL can reach.
 const int WebPort = 5179;
-var webUrl = $"http://localhost:{WebPort}";
 if (IsPortInUse(WebPort))
 {
-    app.Logger.LogWarning(
-        "Port {Port} is already in use — another dynamic-ui instance is likely running. Starting MCP " +
-        "tools only; SignalR live-broadcast from THIS process is disabled. Stop the other instance " +
-        "(netstat -ano | findstr :{Port}  ->  taskkill /PID <pid> /F) and restart for live UI updates.",
-        WebPort, WebPort);
-    webUrl = "http://127.0.0.1:0"; // ephemeral — keeps the host (and MCP transport) up without conflicting
-                                   // (Kestrel rejects "localhost:0"; dynamic port needs an explicit IP)
+    app.Logger.LogError(
+        "Port {Port} is already in use — dynamic-ui is already running at http://localhost:{Port}. " +
+        "This server is a singleton (all clients share one instance over HTTP), so not starting a " +
+        "second copy. Stop the other instance first if you meant to restart " +
+        "(netstat -ano | findstr :{Port}  ->  taskkill /PID <pid> /F).",
+        WebPort, WebPort, WebPort);
+    return;
 }
 
-app.Run(webUrl);
+app.Run($"http://localhost:{WebPort}");
 
 // True if something is already listening on the loopback port. Best-effort (a TOCTOU race with the
 // subsequent Kestrel bind is possible but harmless for this single-operator PoC).

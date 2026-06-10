@@ -2,16 +2,15 @@
   "//": "Copy the dynamic-ui block into your Claude Desktop config and restart Claude Desktop.",
   "//config_path_windows": "%APPDATA%\\Claude\\claude_desktop_config.json",
   "//config_path_macos": "~/Library/Application Support/Claude/claude_desktop_config.json",
-  "//note": "--mcp attaches the stdio transport; the same process also hosts SignalR + SQLite on http://localhost:5179.",
+  "//note": "The server is one shared HTTP instance (start it with `dotnet run` in server/). Desktop's config talks stdio, so mcp-remote bridges stdio<->the HTTP MCP endpoint. --allow-http is required because it's plain http on localhost (no TLS). Needs Node/npx on PATH.",
   "mcpServers": {
     "dynamic-ui": {
-      "command": "dotnet",
+      "command": "npx",
       "args": [
-        "run",
-        "--project",
-        "C:\\dev\\mantu\\dynamic-ui\\server\\DynamicUi.Server.csproj",
-        "--",
-        "--mcp"
+        "-y",
+        "mcp-remote",
+        "http://localhost:5179/mcp",
+        "--allow-http"
       ]
     }
   }

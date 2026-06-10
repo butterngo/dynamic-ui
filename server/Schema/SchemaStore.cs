@@ -44,10 +44,129 @@ public class SchemaStore
         var seed = """
         {
           "id": "root",
-          "type": "Screen",
-          "props": { "title": "Dynamic UI" },
+          "type": "LauncherWindow",
+          "props": { "dark": false },
           "children": [
-            { "id": "welcome", "type": "Heading", "props": { "text": "Welcome" } }
+            {
+              "id": "titlebar",
+              "type": "TitleBar",
+              "props": { "title": "Mantu Apps Launcher", "subtitle": "HOP · v2.4", "icon": "M", "iconColor": "#7C3AED" }
+            },
+            {
+              "id": "toolbar",
+              "type": "Toolbar",
+              "children": [
+                {
+                  "id": "env",
+                  "type": "EnvSegment",
+                  "props": {
+                    "options": [
+                      { "label": "DEV", "color": "#f0b429" },
+                      { "label": "STAGING", "active": true, "color": "#6cdec4" },
+                      { "label": "PROD", "color": "#e85d5d" }
+                    ]
+                  }
+                },
+                { "id": "search", "type": "SearchBar", "props": { "placeholder": "Search apps…  (Ctrl+K)" } },
+                { "id": "refresh", "type": "ToolButton", "props": { "icon": "⟳" } },
+                { "id": "density", "type": "ToolButton", "props": { "icon": "▦" } }
+              ]
+            },
+            {
+              "id": "body",
+              "type": "Body",
+              "children": [
+                {
+                  "id": "sidebar",
+                  "type": "Sidebar",
+                  "children": [
+                    {
+                      "id": "ws",
+                      "type": "SideSection",
+                      "props": {
+                        "label": "Workspaces",
+                        "items": [
+                          { "icon": "▦", "label": "All apps", "count": 24, "active": true },
+                          { "icon": "★", "label": "Pinned", "count": 5 },
+                          { "icon": "◷", "label": "Recent", "count": 8 }
+                        ]
+                      }
+                    },
+                    {
+                      "id": "cats",
+                      "type": "SideSection",
+                      "props": {
+                        "label": "Categories",
+                        "items": [
+                          { "icon": "◆", "label": "Internal", "count": 12 },
+                          { "icon": "◯", "label": "Web", "count": 7 },
+                          { "icon": "⚙", "label": "DevOps", "count": 5 }
+                        ]
+                      }
+                    },
+                    {
+                      "id": "envcard",
+                      "type": "EnvCard",
+                      "props": { "title": "STAGING", "subtitle": "eu-west-1 · healthy", "footer": "Last sync 2m ago", "dotColor": "#6cdec4" }
+                    }
+                  ]
+                },
+                {
+                  "id": "mainpanel",
+                  "type": "MainPanel",
+                  "children": [
+                    { "id": "mainhead", "type": "MainHeader", "props": { "title": "All apps", "count": 24, "subtitle": "Showing apps available for STAGING" } },
+                    {
+                      "id": "grid",
+                      "type": "CardGrid",
+                      "children": [
+                        {
+                          "id": "app-timesheet",
+                          "type": "AppCard",
+                          "props": {
+                            "name": "Timesheet", "short": "Weekly time entry", "chip": "Internal", "pinned": true,
+                            "rows": [ { "label": "Type", "value": "Web app" }, { "label": "URL", "value": "staging.timesheet.mantu.io" } ],
+                            "actions": [ { "label": "Open", "primary": true }, { "label": "⋯" } ]
+                          }
+                        },
+                        {
+                          "id": "app-talentsoft",
+                          "type": "AppCard",
+                          "props": {
+                            "name": "Talentsoft", "short": "HR & talent management", "chip": "HR",
+                            "rows": [ { "label": "Type", "value": "SaaS" }, { "label": "URL", "value": "mantu.talent-soft.com" } ],
+                            "actions": [ { "label": "Open", "primary": true }, { "label": "⋯" } ]
+                          }
+                        },
+                        {
+                          "id": "app-pipeline",
+                          "type": "AppCard",
+                          "props": {
+                            "name": "Pipeline", "short": "CI/CD dashboard", "chip": "DevOps", "selected": true,
+                            "rows": [ { "label": "Type", "value": "Internal" }, { "label": "URL", "value": "ci.mantu.io/pipeline" } ],
+                            "actions": [ { "label": "Open", "primary": true }, { "label": "⋯" } ]
+                          }
+                        },
+                        {
+                          "id": "app-knowledge",
+                          "type": "AppCard",
+                          "props": {
+                            "name": "Knowledge", "short": "Internal wiki & docs", "chip": "Docs",
+                            "rows": [ { "label": "Type", "value": "Web app" }, { "label": "URL", "value": "wiki.mantu.io" } ],
+                            "actions": [ { "label": "Open", "primary": true }, { "label": "⋯" } ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "statusbar",
+              "type": "StatusBar",
+              "props": { "left": "● Connected", "mid": "24 apps · 5 pinned", "right": "STAGING · eu-west-1" }
+            }
           ]
         }
         """;

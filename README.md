@@ -11,30 +11,38 @@ no rebuild, no redeploy.
 ## Architecture
 
 ```
-Claude Desktop ──stdio(MCP)──▶ ┌─────────────────────────────────────────┐
-                               │  DynamicUi.Server (single .NET process)   │
-   ui_apply_patch, ui_set_prop │   • MCP tools (ui_*)                       │
-   ui_add/remove_component     │   • PatchValidator + ComponentRegistry     │
-   ui_history, ui_rollback     │   • SchemaStore  (validate→persist→cast)   │
-                               │   • SQLite (schema + patch history)        │
-                               │   • SignalR hub  /hub/ui                   │
-                               └───────────────┬───────────────────────────┘
-                                               │ SignalR "SchemaChanged"
-                                               ▼
+Claude Code     ─┐
+                 │ HTTP(MCP) /mcp  ┌─────────────────────────────────────────┐
+Claude Desktop  ─┤───────────────▶│  DynamicUi.Server (single .NET process)   │
+                 │                 │   • MCP tools (ui_*)  — Streamable HTTP    │
+   ui_apply_patch, ui_set_prop     │   • PatchValidator + ComponentRegistry     │
+   ui_add/remove_component         │   • SchemaStore  (validate→persist→cast)   │
+   ui_history, ui_rollback         │   • SQLite (schema + patch history)        │
+                                   │   • SignalR hub  /hub/ui                   │
+                                   └───────────────┬───────────────────────────┘
+                                                   │ SignalR "SchemaChanged"
+                                                   ▼
                               React client (Vite) — walks schema, renders live
 ```
 
-- **server/** — .NET 8. MCP (stdio) + SignalR + EF Core/SQLite in one process.
+Every client (Claude Code, Claude Desktop, the browser) connects to **one** long-running server
+over HTTP — a single authoritative `SchemaStore`, so concurrent edits serialize and every edit
+broadcasts live regardless of which client made it.
+
+- **server/** — .NET 8. MCP (HTTP, Streamable) + SignalR + EF Core/SQLite in one process.
 - **client/** — React + TypeScript (Vite), `@microsoft/signalr`.
 
 ## Run it
 
-**1. Start the server (web mode, for the client):**
+**1. Start the server (one shared instance — serves the browser AND every MCP client):**
 
 ```sh
 cd server
-dotnet run            # hosts http://localhost:5179  (SignalR + GET /api/schema)
+dotnet run            # hosts http://localhost:5179  (SignalR + GET /api/schema + MCP at /mcp)
 ```
+
+Leave it running. Clients no longer spawn their own copy — they all connect to this one. (Starting
+a second copy is a no-op: it sees 5179 in use and exits rather than fighting over the port/DB.)
 
 **2. Start the client:**
 
@@ -46,20 +54,29 @@ npm run dev           # http://localhost:5173
 
 Open http://localhost:5173 — it renders the seeded schema and shows a live/▽version indicator.
 
-**3. Wire Claude Desktop (to drive edits via MCP):**
+**3. Wire the Claude clients (to drive edits via MCP):**
 
-Copy the `dynamic-ui` block from `docs/claude-desktop-config.example.json` into your
-`claude_desktop_config.json` and restart Claude Desktop. It launches the server with `--mcp`
-(stdio transport on + the same Kestrel/SignalR/SQLite host). Then ask Claude, e.g.:
+Both connect to the running server's MCP endpoint, and both can be open at once against the one store.
 
-> "Make the welcome heading say 'Hello team' and add a teal banner that says 'Live edit works'."
+- **Claude Code** — `.mcp.json` (already set in this repo):
+  ```json
+  { "mcpServers": { "dynamic-ui": { "type": "http", "url": "http://localhost:5179/mcp" } } }
+  ```
+- **Claude Desktop** — its config talks stdio, so bridge to the HTTP server with `mcp-remote`
+  (see `docs/claude-desktop-config.example.json`), then restart Desktop:
+  ```json
+  { "mcpServers": { "dynamic-ui": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:5179/mcp", "--allow-http"]
+  } } }
+  ```
 
-The change is validated, versioned, broadcast — and appears in every open browser instantly.
+Then ask Claude, e.g.:
 
-> Note: in MCP mode the web host lives only while Claude Desktop has the process spawned. For
-> driving both the browser *and* Claude Desktop against one store during a demo, run `dotnet run`
-> (web mode) in a terminal and point the browser at it; use Claude Desktop's MCP launch to issue
-> edits. (PoC trade-off — see ADR-001.)
+> "Make the title bar say 'Hello team' and add a teal banner that says 'Live edit works'."
+
+The change is validated, versioned, broadcast — and appears in every open browser instantly,
+no matter which client issued it.
 
 ## Verify the live-edit loop (no Claude Desktop needed)
 
@@ -71,7 +88,7 @@ patch is rejected without bumping the version.
 ```sh
 cd server
 dotnet build                       # produces bin/Debug/net8.0/DynamicUi.Server.dll
-node ../client/scripts/loop-test.mjs   # spawns the server (--mcp), drives a patch, asserts the broadcast
+node ../client/scripts/loop-test.mjs   # starts (or reuses) the server, drives a patch over /mcp, asserts the broadcast
 ```
 
 Expected: `ALL PASS ✅`.

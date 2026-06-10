@@ -20,6 +20,24 @@ public static class ComponentRegistry
             ["Button"]    = new[] { "label" },
             ["Input"]     = new[] { "name" },
             ["Image"]     = new[] { "src" },
+
+            // --- App-launcher catalogue (Win11/WPF-look). Containers carry children;
+            //     prop-driven composites use array props (options/items/rows/actions). ---
+            ["LauncherWindow"] = Array.Empty<string>(),          // window chrome wrapper
+            ["TitleBar"]       = new[] { "title" },              // + subtitle, icon, iconColor
+            ["Toolbar"]        = Array.Empty<string>(),          // container
+            ["EnvSegment"]     = new[] { "options" },            // options[]: {label, active?, color?}
+            ["SearchBar"]      = Array.Empty<string>(),          // + placeholder
+            ["ToolButton"]     = Array.Empty<string>(),          // + icon
+            ["Body"]           = Array.Empty<string>(),          // container (sidebar | main)
+            ["Sidebar"]        = Array.Empty<string>(),          // container
+            ["SideSection"]    = new[] { "label" },              // items[]: {icon?, label, count?, active?}
+            ["EnvCard"]        = new[] { "title" },              // + subtitle, footer, dotColor
+            ["MainPanel"]      = Array.Empty<string>(),          // container
+            ["MainHeader"]     = new[] { "title" },              // + count, subtitle
+            ["CardGrid"]       = Array.Empty<string>(),          // container
+            ["AppCard"]        = new[] { "name" },               // + short, chip, thumb, pinned, selected, rows[], actions[]
+            ["StatusBar"]      = Array.Empty<string>(),          // + left, mid, right
         };
 
     public static bool IsKnown(string type) => Components.ContainsKey(type);
