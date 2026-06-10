@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using DynamicUi.Server.Data;
 using DynamicUi.Server.Hubs;
 using DynamicUi.Server.Schema;
@@ -52,4 +54,39 @@ app.MapGet("/api/schema", async (SchemaStore store) =>
 app.MapGet("/api/history", async (SchemaStore store) => Results.Ok(await store.GetHistoryAsync()));
 app.MapHub<UiHub>("/hub/ui");
 
-app.Run("http://localhost:5179");
+// The MCP stdio transport and this web host share one process. A second instance — or a stale
+// orphan — holding 5179 would crash the whole process on Kestrel bind, taking the MCP transport
+// down mid-handshake (Claude Desktop/Code shows "fetching tools failed: Not connected"). So when
+// 5179 is already taken we keep the MCP tools alive on an ephemeral port and warn loudly instead
+// of dying: tools stay usable; only SignalR live-broadcast from THIS process is forfeited.
+const int WebPort = 5179;
+var webUrl = $"http://localhost:{WebPort}";
+if (IsPortInUse(WebPort))
+{
+    app.Logger.LogWarning(
+        "Port {Port} is already in use — another dynamic-ui instance is likely running. Starting MCP " +
+        "tools only; SignalR live-broadcast from THIS process is disabled. Stop the other instance " +
+        "(netstat -ano | findstr :{Port}  ->  taskkill /PID <pid> /F) and restart for live UI updates.",
+        WebPort, WebPort);
+    webUrl = "http://127.0.0.1:0"; // ephemeral — keeps the host (and MCP transport) up without conflicting
+                                   // (Kestrel rejects "localhost:0"; dynamic port needs an explicit IP)
+}
+
+app.Run(webUrl);
+
+// True if something is already listening on the loopback port. Best-effort (a TOCTOU race with the
+// subsequent Kestrel bind is possible but harmless for this single-operator PoC).
+static bool IsPortInUse(int port)
+{
+    try
+    {
+        var listener = new TcpListener(IPAddress.Loopback, port);
+        listener.Start();
+        listener.Stop();
+        return false;
+    }
+    catch (SocketException)
+    {
+        return true;
+    }
+}

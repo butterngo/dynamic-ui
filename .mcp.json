@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "dynamic-ui": {
+      "command": "dotnet",
+      "args": [
+        "server/bin/Debug/net8.0/DynamicUi.Server.dll",
+        "--mcp"
+      ]
+    }
+  }
+}
